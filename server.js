@@ -1,5 +1,6 @@
 let express = require('express')
 let {MongoClient} = require('mongodb')
+//destructuring
 
 let app = express()
 let db
@@ -16,7 +17,8 @@ start()
 app.use(express.urlencoded({extended: false}))
 
 app.get('/', (req, res) => {
-  res.send(`<!DOCTYPE html>
+  db.collection('items').find().toArray((err, items) => {
+    res.send(`<!DOCTYPE html>
   <html>
   <head>
     <meta charset="UTF-8">
@@ -38,38 +40,28 @@ app.get('/', (req, res) => {
       </div>
       
       <ul class="list-group pb-5">
-        <li class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
-          <span class="item-text">Fake example item #1</span>
+        ${items.map((item) => {
+          return `<li class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
+          <span class="item-text">${item.text}</span>
           <div>
             <button class="edit-me btn btn-secondary btn-sm mr-1">Edit</button>
             <button class="delete-me btn btn-danger btn-sm">Delete</button>
           </div>
-        </li>
-        <li class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
-          <span class="item-text">Fake example item #2</span>
-          <div>
-            <button class="edit-me btn btn-secondary btn-sm mr-1">Edit</button>
-            <button class="delete-me btn btn-danger btn-sm">Delete</button>
-          </div>
-        </li>
-        <li class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
-          <span class="item-text">Fake example item #3</span>
-          <div>
-            <button class="edit-me btn btn-secondary btn-sm mr-1">Edit</button>
-            <button class="delete-me btn btn-danger btn-sm">Delete</button>
-          </div>
-        </li>
+        </li>`
+        }).join('')}
       </ul>
       
     </div>
     
   </body>
   </html>`)
+  })
+  
 })
 
 app.post('/create-item', (req, res) => {
   db.collection('items').insertOne({text: req.body.item}, () => {
-    res.send("Thanks for submitting form")
+    res.redirect('/')
   })
 })
 
