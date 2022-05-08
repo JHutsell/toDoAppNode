@@ -1,6 +1,7 @@
 let express = require('express')
 let {MongoClient, ObjectId} = require('mongodb')
 //destructuring
+let sanitizeHTML = require('sanitize-html')
 
 let app = express()
 let db
@@ -19,6 +20,18 @@ start()
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
 
+function passwordProtected(req, res, next) {
+  res.set("WWW-authenticate", 'Basic realm="Simple To Do App"')
+  //console.log(req.headers.authorization)
+  // username: learn password: javascript
+  if (req.headers.authorization == "Basic bGVhcm46amF2YXNjcmlwdA==") {
+    next()
+  } else {
+    res.status(401).send("Authentication required")
+  }
+}
+
+app.use(passwordProtected)
 app.get('/', (req, res) => {
   db.collection('items').find().toArray((err, items) => {
     res.send(`<!DOCTYPE html>
@@ -61,13 +74,15 @@ app.get('/', (req, res) => {
 })
 
 app.post('/create-item', (req, res) => {
-  db.collection('items').insertOne({text: req.body.text}, (err, info) => {
-    res.json({_id: info.insertId, text: req.body.text})
+  let safeText = sanitizeHTML(req.body.text, {allowedTags: [], allowedAttributes: {}})
+  db.collection('items').insertOne({text: safeText}, (err, info) => {
+    res.json({_id: info.insertId, text: safeText})
   })
 })
 
 app.post('/update-item', (req, res) => {
-  db.collection('items').findOneAndUpdate({_id: new ObjectId(req.body.id)}, {$set: {text: req.body.text}}, () => {
+  let safeText = sanitizeHTML(req.body.text, {allowedTags: [], allowedAttributes: {}})
+  db.collection('items').findOneAndUpdate({_id: new ObjectId(req.body.id)}, {$set: {text: safeText}}, () => {
     res.send("SUCCESS")
   })
 })
